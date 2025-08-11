@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI RAG Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <button id="theme-toggle">☀️/🌙</button>
+
+    <header>
+        <h1>AI RAG Assistant</h1>
+    </header>
+
+    <main>
+        <section id="model-info">
+            <h2>Model Details</h2>
+            <p><strong>Model:</strong> Phi-3.5 (mini)</p>
+            <p><strong>Description:</strong> A small, efficient language model from Microsoft, ideal for local CPU-based tasks.</p>
+            <p><strong>RAG Enabled:</strong> This model is enhanced with your private documents to provide contextual answers.</p>
+            
+            <div class="upload-section">
+                <h3>Upload PDF Document</h3>
+                <form id="uploadForm">
+                    <input type="file" id="pdfFile" name="file" accept=".pdf" required>
+                    <button type="submit">Upload & Start Chat</button>
+                </form>
+                <p id="message"></p>
+            </div>
+        </section>
+
+        <section id="chat-interface" style="display:none;">
+            <h2>Chat with your Documents</h2>
+            <div id="chat-box"></div>
+            <form id="chatForm">
+                <input type="text" id="userInput" placeholder="Ask a question about your PDF...">
+                <button type="submit">Send</button>
+            </form>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
