@@ -104,11 +104,11 @@ Start the FastAPI server using Uvicorn.
 uvicorn app.main:app --reload
 ```
 
-![screen](./assets/Screenshot-2025-08-12-015203.jpg)
+![screen](./assets/Screenshot-2025-08-12-015257.jpg)
 
 The server will be running on `http://localhost:8000`. Open this URL in your web browser to start chatting with HeyJude.
 
-![screen](./assets/Screenshot-2025-08-12-015257.jpg)
+![screen](./assets/Screenshot-2025-08-12-015203.jpg)
 
 ## Project Structure
 
