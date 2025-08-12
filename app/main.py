@@ -1,102 +1,99 @@
 import os
-import requests
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from .rag import ingest_documents, retrieve_context, DB_PATH, EMBEDDING_MODEL_NAME
+from starlette.responses import FileResponse
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.llms import Ollama
+from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
 
-# Initialize FastAPI app
-app = FastAPI()
-# Get the absolute path to the directory containing main.py
-# This ensures the path is correct regardless of where the command is run.
+# --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "db")
 
-# Mount the 'frontend' directory to serve static files (HTML, CSS, JS)
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "frontend/static")), name="static")
+# --- Initialize Embeddings and LLM ---
+print("Initializing embedding model...")
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+embeddings = HuggingFaceEmbeddings(model_name=model_name)
+print("Embedding model initialized.")
 
-# Pydantic model for incoming chat requests
-class ChatRequest(BaseModel):
-    query: str
+print("Initializing Ollama with phi3:mini...")
+llm = Ollama(model="phi3:mini")
+print("Ollama initialized.")
 
-# Environment variables are used to configure the application.
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://ollama:11434")
-UPLOAD_FOLDER = "./documents"
+# --- Load the Vector Database ---
+if not os.path.exists(DB_PATH):
+    raise RuntimeError(f"Database not found at {DB_PATH}. Please run ingest.py first.")
 
-# Initialize vector store at startup
-try:
-    embedding_model = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    vector_store = Chroma(
-        persist_directory=DB_PATH,
-        embedding_function=embedding_model
-    )
-    print("Vector store loaded successfully.")
-except Exception as e:
-    print(f"Error loading vector store: {e}")
-    vector_store = None
-# Serve the main HTML page
-@app.get("/", response_class=HTMLResponse)
-async def serve_frontend():
-    """Serves the main HTML page for document upload."""
-    with open(os.path.join(BASE_DIR, "frontend/index.html"), "r") as f:
-        return f.read()
+print(f"Loading vector database from: {DB_PATH}")
+vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
+print("Vector database loaded successfully.")
 
-@app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+# --- Create a Custom Prompt Template ---
+# This template guides the LLM to use the provided context and answer concisely.
+prompt_template = """
+Use the following pieces of context to answer the question at the end. 
+If you don't know the answer from the context provided, just say that you don't know, don't try to make up an answer.
+Keep the answer concise and helpful.
+
+Context: {context}
+
+Question: {question}
+
+Helpful Answer:
+"""
+PROMPT = PromptTemplate(
+    template=prompt_template, input_variables=["context", "question"]
+)
+
+# --- Create the RetrievalQA Chain with the custom prompt ---
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=vectorstore.as_retriever(),
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": PROMPT} # Injecting our custom prompt
+)
+print("RAG chain with custom prompt created.")
+
+# --- FastAPI App ---
+app = FastAPI()
+
+# Mount static files and serve the frontend
+static_path = os.path.join(BASE_DIR, "frontend", "static")
+os.makedirs(static_path, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+@app.get("/")
+async def read_index():
+    index_path = os.path.join(BASE_DIR, "frontend", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "index.html not found"}
+
+# API endpoint for the chat
+@app.post("/api/chat")
+async def chat_endpoint(request: dict):
     """
-    Endpoint to upload a PDF file, validate it, and trigger ingestion.
+    Handles chat requests by running them through the RAG chain and returning sources.
     """
-    max_file_size_mb = 100
-    if not file.content_type == "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
+    user_message = request.get("message", "")
+    if not user_message:
+        return {"error": "No message provided"}
 
-    file_size_bytes = 0
-    # Create the upload folder if it doesn't exist
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    print(f"Received query: {user_message}")
+    
+    # Get the answer and the source documents from the RAG chain
+    result = qa_chain.invoke({"query": user_message})
+    
+    ai_response = result.get("result", "Sorry, I couldn't find an answer.")
+    
+    # Extract the content from the source documents
+    source_documents = result.get("source_documents", [])
+    sources = [doc.page_content for doc in source_documents]
 
-    with open(file_path, "wb") as buffer:
-        while True:
-            chunk = await file.read(1024)
-            if not chunk:
-                break
-            file_size_bytes += len(chunk)
-            if file_size_bytes > max_file_size_mb * 1024 * 1024:
-                os.remove(file_path)
-                raise HTTPException(status_code=400, detail=f"File size exceeds the {max_file_size_mb}MB limit.")
-            buffer.write(chunk)
+    print(f"Generated response: {ai_response}")
+    print(f"Sources found: {len(sources)}")
 
-    global vector_store
-    vector_store = ingest_documents(UPLOAD_FOLDER)
-
-    return {"message": f"File '{file.filename}' processed successfully!"}
-
-@app.post("/chat")
-async def chat_with_rag(request: ChatRequest):
-    """
-    Endpoint to answer a query using Retrieval-Augmented Generation (RAG).
-    This endpoint is still available for testing, though the primary UI is now Open WebUI.
-    """
-    if not vector_store:
-        return {"error": "Vector store not initialized. Please upload a PDF first."}
-
-    context = retrieve_context(vector_store, request.query)
-
-    prompt = f"Using the following context, answer the user's question. If you don't know the answer, say so.\n\nContext:\n{context}\n\nQuestion:\n{request.query}"
-
-    try:
-        response = requests.post(
-            f"{OLLAMA_API_URL}/api/generate",
-            json={
-                "model": "phi3:mini",
-                "prompt": prompt,
-                "stream": False
-            }
-        )
-        response.raise_for_status()
-        ollama_response = response.json()["response"]
-        return {"response": ollama_response}
-    except requests.exceptions.RequestException as e:
-        return {"error": f"Failed to communicate with Ollama: {e}"}
+    return {"response": ai_response, "sources": sources}
