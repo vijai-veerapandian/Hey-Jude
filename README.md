@@ -1,18 +1,31 @@
-# HeyJude - AI Assistant for Internal Documents
+# HeyJude - AI Assistant (Two-Service Architecture)
 
-HeyJude is a smart, friendly AI assistant designed to help employees navigate internal company documents and processes. It uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, context-aware answers based on a specific knowledge base (in this case, an employee handbook PDF).
+HeyJude is a smart, friendly AI assistant designed to help employees navigate internal company documents. This project is built using a modern, scalable two-service architecture.
+
+## Architecture Overview
+
+The application is split into two distinct services for better performance, security, and separation of concerns:
+
+1.  **RAG/Inference Service:** A dedicated backend that lives on the same server as the Ollama model. It handles all data ingestion, vector storage, and AI processing.
+2.  **Frontend Service:** A lightweight, containerized service that serves the user interface and acts as a proxy, forwarding user requests to the RAG service.
+
+```
+[User's Browser] <--> [Frontend Service (Docker)] <--> [RAG/Inference Service (Ollama Server)]
+```
+
+---
 
 ## Features
 
 * **Interactive Chat Interface:** A modern, user-friendly frontend for seamless interaction.
-* **Document-Aware Responses:** Answers are generated based on the content of provided internal documents, ensuring accuracy.
-* **Source Highlighting:** Users can see the exact text from the source document that was used to generate an answer, providing transparency and trust.
+* **Document-Aware Responses:** Answers are generated based on the content of provided internal documents.
+* **Source Highlighting:** Users can see the exact text from the source document that was used to generate an answer.
 * **Dark/Light Mode:** A theme toggle for user comfort.
-* **RAG Architecture:** A robust backend that can be easily extended with more documents.
+* **Scalable Two-Service Design:** Decouples the UI from the AI, allowing them to be scaled and managed independently.
+
+---
 
 ## Screenshots
-
-Here is a look at the HeyJude interface in action.
 
 **Main Chat Interface:**
 `[YET TO INSERT SCREENSHOT OF THE MAIN CHAT WINDOW HERE]`
@@ -20,107 +33,96 @@ Here is a look at the HeyJude interface in action.
 **"Show Sources" Feature:**
 `[YET TO INSERT SCREENSHOT OF AN AI RESPONSE WITH THE SOURCES EXPANDED HERE]`
 
+---
+
 ## Tech Stack
 
-* **Backend:**
-    * **Python 3.10+**
-    * **FastAPI:** For creating the web server and API endpoints.
-    * **Uvicorn:** As the ASGI server to run the application.
-    * **LangChain:** To orchestrate the RAG pipeline (document loading, splitting, and the QA chain).
-    * **Ollama (phi3:mini):** For the Large Language Model (LLM) that generates answers.
-    * **ChromaDB:** As the vector database to store and retrieve document embeddings.
-    * **SentenceTransformers:** For creating the text embeddings.
-* **Frontend:**
-    * **HTML5**
-    * **Tailwind CSS:** For all styling.
-    * **Vanilla JavaScript:** For interactivity and API communication.
+### RAG/Inference Service (Backend)
+* **Python 3.10+**
+* **FastAPI & Uvicorn**
+* **LangChain, ChromaDB, SentenceTransformers, PyPDF**
+* **Ollama (phi3:mini)**
 
-## Setup and Installation
+### Frontend Service (UI & Proxy)
+* **Python 3.10+**
+* **FastAPI & Uvicorn**
+* **HTTPX:** For making API calls to the RAG service.
+* **Docker:** For containerization.
+* **HTML, Tailwind CSS, Vanilla JavaScript**
 
-Follow these steps to set up and run the project locally.
+---
 
-### 1. Prerequisites
+## Setup and Execution
 
-* Python 3.10 or newer.
-* [Ollama](https://ollama.com/) installed and running with the `phi3:mini` model pulled.
-    ```bash
-    ollama pull phi3:mini
-    ```
+Follow these steps to set up and run both services.
 
-### 2. Clone the Repository
+### Part 1: RAG/Inference Service (On the Ollama Server)
 
-First, clone the project repository to your local machine.
-```bash
-git clone <your-repository-url>
-cd Hey-Jude
+This service must be running before you start the frontend.
+
+#### **Folder Structure (`rag-service/`)**
 ```
-
-### 3. Set Up a Virtual Environment
-
-It is highly recommended to use a virtual environment to manage project dependencies.
-
-```bash
-# Create the virtual environment
-python3 -m venv venv
-
-# Activate it
-source venv/bin/activate
-```
-
-### 4. Install Dependencies
-
-Install all the required Python packages using the `requirements.txt` file.
-
-```bash
-pip install -r app/requirements.txt
-```
-
-### 5. Add Your Document
-
-Place the PDF document you want the AI to learn from into the `app/data/` directory. For this project, it should be named `handbook.pdf`.
-
-## Execution
-
-The application runs in two stages: a one-time data ingestion and the main server application.
-
-### 1. Ingest Your Data
-
-This step reads your PDF, creates embeddings, and stores them in the local ChromaDB database. **You only need to run this once**, or whenever you update your source document.
-
-```bash
-python app/ingest.py
-```
-
-After running, you should see a new `db` folder inside the `app` directory.
-
-**Ingestion Log:**
-`[YET TO ADD A SCREENSHOT OF THE INGESTION SCRIPT'S TERMINAL OUTPUT HERE]`
-
-### 2. Run the Application
-
-Start the FastAPI server using Uvicorn.
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The server will be running on `http://127.0.0.1:8000`. Open this URL in your web browser to start chatting with HeyJude.
-
-## Project Structure
-
-The project is organized as follows:
-
-```
-Hey-Jude/
+rag-service/
 ├── app/
 │   ├── data/
-│   │   └── handbook.pdf      # Source document for the AI
+│   │   └── handbook-v1.pdf
 │   ├── db/
-│   │   └── ...               # ChromaDB vector store (created by ingest.py)
-│   ├── frontend/
-│   │   ├── static/           # For future CSS/JS files
-│   │   └── index.html        # The main chat interface
-│   ├── ingest.py             # Script to process and store document knowledge
-│   └── main.py               # The FastAPI backend server
-└── requirements.txt          # Project dependencies
+│   │   └── ...
+│   ├── ingest.py
+│   └── rag_main.py
+├── .env
+└── requirements.txt
 ```
+
+#### **Setup & Run**
+1.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Configure Environment:** Create a `.env` file with the local Ollama URL:
+    ```
+    OLLAMA_BASE_URL=http://localhost:11434
+    ```
+3.  **Ingest Data:** Run the ingestion script to build the vector database.
+    ```bash
+    python app/ingest.py
+    ```
+4.  **Start the Service:** Run the Uvicorn server. It must listen on `0.0.0.0` to be accessible on the network.
+    ```bash
+    uvicorn app.rag_main:app --host 0.0.0.0 --port 8001 --reload
+    ```
+
+### Part 2: Frontend Service:
+
+This service serves the UI to the user.
+
+#### **Folder Structure (`frontend-service/`)**
+```
+frontend-service/
+├── app/
+│   ├── frontend/
+│   │   └── index.html
+│   └── main.py
+├── .env
+├── Dockerfile
+└── requirements.txt
+```
+
+#### **Setup & Run**
+1.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Configure Environment:** Create a `.env` file with the IP address and port of your RAG service:
+    ```
+    RAG_SERVICE_URL=[http://192.168.2.210:8001](http://192.168.2.210:8001)
+    ```
+3.  **Build the Docker Image:**
+    ```bash
+    docker build -t heyjude-frontend:1.0 .
+    ```
+4.  **Run the Docker Container:** Use the `--env-file` flag to pass the configuration.
+    ```bash
+    docker run --env-file ./.env -p 8000:8000 --name heyjude-frontend heyjude-frontend:1.0
+    ```
+5.  **Access the Application:** Open your browser and navigate to `http://localhost:8000`.
