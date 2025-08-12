@@ -94,7 +94,23 @@ python app/ingest.py
 After running, you should see a new `db` folder inside the `app` directory.
 
 **Ingestion Log:**
-`[YET TO ADD A SCREENSHOT OF THE INGESTION SCRIPT'S TERMINAL OUTPUT HERE]`
+
+```
+(venv) vijai@phi-ollama:~/Documents/Hey-Jude/app$python3 ingest.py
+ --- Starting Document Ingestion ---
+Loading document from: /home/vijai/Documents/
+--- Starting Document Ingestion ---
+Loading document from: /home/vijai/Documents/Hey-Jude/app/data/handbook.pdf
+Successfully loaded 2 page(s).
+Splitting document into chunks...
+Created 10 text chunks.
+Initializing embedding model...
+/home/vijai/Documents/Hey-Jude/app/ingest.py:41: LangChainDeprecationWarning: ...
+Embedding model initialized.
+Creating and persisting vector store at: /home/vijai/Documents/Hey-Jude/app/db
+--- Ingestion Complete ---
+Vector store created successfully with 10 documents.
+```
 
 ### 2. Run the Application
 
