@@ -15,10 +15,10 @@ HeyJude is a smart, friendly AI assistant designed to help employees navigate in
 Here is a look at the HeyJude interface in action.
 
 **Main Chat Interface:**
-`[INSERT SCREENSHOT OF THE MAIN CHAT WINDOW HERE]`
+`[YET TO INSERT SCREENSHOT OF THE MAIN CHAT WINDOW HERE]`
 
 **"Show Sources" Feature:**
-`[INSERT SCREENSHOT OF AN AI RESPONSE WITH THE SOURCES EXPANDED HERE]`
+`[YET TO INSERT SCREENSHOT OF AN AI RESPONSE WITH THE SOURCES EXPANDED HERE]`
 
 ## Tech Stack
 
@@ -94,7 +94,7 @@ python app/ingest.py
 After running, you should see a new `db` folder inside the `app` directory.
 
 **Ingestion Log:**
-`[INSERT SCREENSHOT OF THE INGESTION SCRIPT'S TERMINAL OUTPUT HERE]`
+`[YET TO ADD A SCREENSHOT OF THE INGESTION SCRIPT'S TERMINAL OUTPUT HERE]`
 
 ### 2. Run the Application
 
