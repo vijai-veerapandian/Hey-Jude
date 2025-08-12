@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -18,8 +20,10 @@ model_name = "sentence-transformers/all-MiniLM-L6-v2"
 embeddings = HuggingFaceEmbeddings(model_name=model_name)
 print("Embedding model initialized.")
 
-print("Initializing Ollama with phi3:mini...")
-llm = Ollama(model="phi3:mini")
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL")
+
+print(f"Initializing Ollama with phi3:mini at base URL: {OLLAMA_BASE_URL or 'default'}...")
+llm = Ollama(model="phi3:mini", base_url=OLLAMA_BASE_URL)
 print("Ollama initialized.")
 
 # --- Load the Vector Database ---
