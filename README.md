@@ -30,13 +30,12 @@ The application is split into two distinct services for better performance, secu
 ## Screenshots
 
 **Main Chat Interface:**
-`[YET TO INSERT SCREENSHOT OF THE MAIN CHAT WINDOW HERE]`
 
 ![screen](./assets/application-frontview.jpg)
 
 
-
 **"Show Sources" Feature:**
+
 ![screen](./assets/application-function.jpg)
 ---
 
