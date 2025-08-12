@@ -1,4 +1,4 @@
-# HeyJude - AI Assistant (Two-Service Architecture)
+## HeyJude - AI Assistant (Two-Service Architecture)
 
 HeyJude is a smart, friendly AI assistant designed to help employees navigate internal company documents. This project is built using a modern, scalable two-service architecture.
 
