@@ -30,6 +30,8 @@ The application is split into two distinct services for better performance, secu
 **Main Chat Interface:**
 `[YET TO INSERT SCREENSHOT OF THE MAIN CHAT WINDOW HERE]`
 
+![screen](./assets/ollama-initial-2025-08-12 024659.jpg)
+
 **"Show Sources" Feature:**
 `[YET TO INSERT SCREENSHOT OF AN AI RESPONSE WITH THE SOURCES EXPANDED HERE]`
 
