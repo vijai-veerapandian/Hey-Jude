@@ -77,7 +77,7 @@ pip install -r app/requirements.txt
 
 ### 5. Add Your Document
 
-Place the PDF document you want the AI to learn from into the `app/data/` directory. For this project, it should be named `handbook.pdf`.
+Place the PDF document you want the AI to learn from into the `app/data/` directory. For this project, it should be named `handbook-*.pdf`.
 
 ## Execution
 
@@ -134,7 +134,7 @@ The project is organized as follows:
 Hey-Jude/
 ├── app/
 │   ├── data/
-│   │   └── handbook.pdf      # Source document for the AI
+│   │   └── handbook-1.pdf      # Source document for the AI
 │   ├── db/
 │   │   └── ...               # ChromaDB vector store (created by ingest.py)
 │   ├── frontend/
