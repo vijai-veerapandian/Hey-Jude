@@ -243,7 +243,7 @@ In **Manage Jenkins** → **Configure System**, add your SonarQube server detail
 The final step is to create the pipeline job in Jenkins:
 
 1. In Jenkins, click **New Item**.
-2. Enter a name (e.g., `HeyJude-Pipeline`) and select **Pipeline**.
+2. Enter a name `Hey-Jude-Pipeline` and select **Pipeline**.
 3. In the configuration, go to the **Pipeline** section.
 4. Change the **Definition** to **Pipeline script from SCM**.
 5. Select **Git** and enter your repository URL.
