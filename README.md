@@ -134,6 +134,7 @@ frontend-service/
 
 #### Part3: Jenkins CI Implementation
 
+# Jenkins CI/CD Process Overview
 
 This document provides a brief summary of the custom Jenkins agent and the pipeline (`Jenkinsfile`) used for the HeyJude project.
 
@@ -175,14 +176,29 @@ Step 10/10 : USER jenkins
 Successfully built 57b3f04879c0
 Successfully tagged vijai-veerapandian/hey-jude-jenkins-agent:1.0
 ➜  jenkins-agent git:(feature1) ✗ docker images
-REPOSITORY                                  TAG            IMAGE ID       CREATED          SIZE
-vijai-veerapandian/hey-jude-jenkins-agent   1.0            57b3f04879c0   10 seconds ago   1.35GB
+REPOSITORY                       TAG            IMAGE ID       CREATED          SIZE
+vijai-v/hey-jude-jenkins-agent   1.0            57b3f04879c0   10 seconds ago   1.35GB
 ```
 
 3.  **Push to a Registry:** The built image is pushed to a container registry (like Docker Hub) so the Jenkins master can pull it when a pipeline job starts.
     ```bash
     docker push your-dockerhub-username/heyjude-jenkins-agent:1.0
     ```
+
+4. **Pushing the image into docker hub. 
+
+```
+  Hey-Jude git:(feature1) docker push vijaiv/hey-jude-jenkins-agent:1.0 
+The push refers to repository [docker.io/vijaiv/hey-jude-jenkins-agent]
+05d13ece579f: Pushed 
+a467dfbb0249: Pushing [==================================================>]  128.3MB
+0d3af3d749cc: Pushing [===============================================>   ]  146.5MB/155MB
+233da6cdb645: Pushing [==============>                                    ]  91.11MB/305.4MB
+99d8e47cdc53: Pushing [=============>                                     ]  105.7MB/382.6MB
+5f70bf18a086: Pushed 
+97ab68c8e1f6: Pushed 
+67cad0c9b7f5: Pushing [===============>                                   ]  26.99MB/89.
+```
 
 ---
 
@@ -210,7 +226,6 @@ The `Jenkinsfile` is the core of the CI/CD process. It defines all the stages th
 7.  **Notifications:** Throughout the process, notifications are sent to a Slack channel to report the status of each stage. Final success or failure notifications are sent at the end.
 
 8.  **Artifacts:** All generated security reports (HTML files) are archived as build artifacts, which can be downloaded and reviewed from the Jenkins job page.
-
 
 ## 3. Configure Your Jenkins Master
 
