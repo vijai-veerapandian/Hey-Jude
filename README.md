@@ -193,7 +193,7 @@ The `Jenkinsfile` is the core of the CI/CD process. It defines all the stages th
 
 ### Pipeline Flow
 
-1.  **Agent Declaration:** The pipeline begins by declaring that all subsequent stages will run inside the custom `heyjude-jenkins-agent` container we created.
+1.  **Agent Declaration:** The pipeline begins by declaring that all subsequent stages will run inside the custom `hey-jude-jenkins-agent` container we created.
 
 2.  **Checkout:** It checks out the latest source code from the Git repository.
 
