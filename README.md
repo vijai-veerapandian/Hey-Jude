@@ -211,3 +211,43 @@ The `Jenkinsfile` is the core of the CI/CD process. It defines all the stages th
 7.  **Notifications:** Throughout the process, notifications are sent to a Slack channel to report the status of each stage. Final success or failure notifications are sent at the end.
 
 8.  **Artifacts:** All generated security reports (HTML files) are archived as build artifacts, which can be downloaded and reviewed from the Jenkins job page.
+
+
+## 3. Configure Your Jenkins Master
+
+Now, you need to set up Jenkins to support the pipeline:
+
+### Install Plugins
+In **Manage Jenkins** → **Plugins**, make sure you have installed:
+- Docker Pipeline
+- Slack Notification
+- OWASP Dependency-Check
+- SonarQube Scanner
+
+### Add Credentials
+In **Manage Jenkins** → **Credentials**, add the credentials your Jenkinsfile needs:
+- Your Docker Hub username and password (**ID:** `dockerhub-credentials`)
+- Your Slack webhook token (**ID:** `slack-webhook-credentials`)
+- Your SonarQube authentication token (**ID:** `sonarqube-credentials`)
+
+### Configure Tools
+In **Manage Jenkins** → **Global Tool Configuration**, add an installation for the **SonarQube Scanner**.
+
+### Configure SonarQube Server
+In **Manage Jenkins** → **Configure System**, add your SonarQube server details.
+
+---
+
+## 4. Create the Jenkins Pipeline Job
+
+The final step is to create the pipeline job in Jenkins:
+
+1. In Jenkins, click **New Item**.
+2. Enter a name (e.g., `HeyJude-Pipeline`) and select **Pipeline**.
+3. In the configuration, go to the **Pipeline** section.
+4. Change the **Definition** to **Pipeline script from SCM**.
+5. Select **Git** and enter your repository URL.
+6. Ensure the **Script Path** is set to `Jenkinsfile`.
+7. Click **Save**.
+8. You can now click **Build Now** to run your complete CI/CD pipeline.
+
