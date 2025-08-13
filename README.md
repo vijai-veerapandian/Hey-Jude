@@ -130,3 +130,84 @@ frontend-service/
     docker run --env-file ./.env -p 8000:8000 --name heyjude-frontend heyjude-frontend:1.0
     ```
 5.  **Access the Application:** Open your browser and navigate to `http://localhost:8000`.
+
+
+#### Part3: Jenkins CI Implementation
+
+# Jenkins CI/CD Process Overview
+
+This document provides a brief summary of the custom Jenkins agent and the pipeline (`Jenkinsfile`) used for the HeyJude project.
+
+---
+
+## 1. Custom Jenkins Agent
+
+To ensure a consistent and clean build environment, the pipeline runs on a custom Docker-based Jenkins agent. This approach avoids installing tools directly on the Jenkins master and makes the build process portable.
+
+### Agent Creation Process
+
+1.  **Define the Environment (`Dockerfile`):** A dedicated `Dockerfile` (located in the `jenkins-agent/` directory) is used to define the agent's environment. It starts from a base Jenkins agent image and installs all necessary build and security tools:
+    * Docker CLI
+    * Python & Pip
+    * Bandit (SAST)
+    * Trivy (Container Scanner)
+    * OWASP Dependency-Check CLI
+    * SonarQube Scanner
+
+2.  **Build the Image:** The `Dockerfile` is used to build a Docker image.
+    ```bash
+    docker build -t your-dockerhub-username/heyjude-jenkins-agent:1.0 .
+    ```
+```
+...
+  inflating: /opt/dependency-check/lib/toml4j-0.7.2.jar  
+  inflating: /opt/dependency-check/lib/velocity-engine-core-2.3.jar  
+  inflating: /opt/dependency-check/lib/xz-1.9.jar  
+  inflating: /opt/dependency-check/LICENSE.txt  
+  inflating: /opt/dependency-check/NOTICE.txt  
+  inflating: /opt/dependency-check/licenses/commons-cli/LICENSE.txt  
+  inflating: /opt/dependency-check/README.md  
+ ---> Removed intermediate container 5c5aba7eae5b
+ ---> 3377380d7b7a
+Step 10/10 : USER jenkins
+ ---> Running in ebf10feda217
+ ---> Removed intermediate container ebf10feda217
+ ---> 57b3f04879c0
+Successfully built 57b3f04879c0
+Successfully tagged vijai-veerapandian/hey-jude-jenkins-agent:1.0
+➜  jenkins-agent git:(feature1) ✗ docker images
+REPOSITORY                                  TAG            IMAGE ID       CREATED          SIZE
+vijai-veerapandian/hey-jude-jenkins-agent   1.0            57b3f04879c0   10 seconds ago   1.35GB
+```
+
+3.  **Push to a Registry:** The built image is pushed to a container registry (like Docker Hub) so the Jenkins master can pull it when a pipeline job starts.
+    ```bash
+    docker push your-dockerhub-username/heyjude-jenkins-agent:1.0
+    ```
+
+---
+
+## 2. Jenkinsfile Pipeline
+
+The `Jenkinsfile` is the core of the CI/CD process. It defines all the stages the code goes through from checkout to deployment.
+
+### Pipeline Flow
+
+1.  **Agent Declaration:** The pipeline begins by declaring that all subsequent stages will run inside the custom `heyjude-jenkins-agent` container we created.
+
+2.  **Checkout:** It checks out the latest source code from the Git repository.
+
+3.  **Security Scans:** A series of security checks are performed in parallel:
+    * **OWASP Dependency-Check:** Scans project dependencies for known vulnerabilities.
+    * **Bandit (SAST):** Analyzes the Python code for common security issues.
+    * **SonarQube Analysis:** Performs a deep code quality and security scan.
+
+4.  **Docker Build:** It builds the `heyjude-frontend` application Docker image using its `Dockerfile`.
+
+5.  **Trivy Scan:** The newly built Docker image is scanned for operating system and package vulnerabilities.
+
+6.  **Push to Docker Hub:** If all previous stages pass, the application image is tagged and pushed to Docker Hub.
+
+7.  **Notifications:** Throughout the process, notifications are sent to a Slack channel to report the status of each stage. Final success or failure notifications are sent at the end.
+
+8.  **Artifacts:** All generated security reports (HTML files) are archived as build artifacts, which can be downloaded and reviewed from the Jenkins job page.

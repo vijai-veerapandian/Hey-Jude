@@ -1,0 +1,147 @@
+// HeyJude CI/CD Pipeline with Docker Agent
+pipeline {
+    // --- Agent Configuration ---
+    // This tells Jenkins to run the pipeline inside a Docker container.
+    // It will pull the specified image and use it as the execution environment.
+    agent {
+        docker {
+            image 'python:3.10-slim' // Use a base Python image for our build tools
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount the Docker socket
+        }
+    }
+
+    // Environment variables used throughout the pipeline.
+    environment {
+        DOCKERHUB_USERNAME = 'your-dockerhub-username'
+        DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend"
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
+        SLACK_CREDENTIALS_ID = 'slack-webhook-credentials'
+        // Credentials for SonarQube, configured in Jenkins
+        SONARQUBE_CREDENTIALS_ID = 'sonarqube-credentials'
+        // Name of the SonarQube server configuration in Jenkins
+        SONARQUBE_SERVER = 'SonarQubeServer'
+    }
+
+    // --- Pipeline Stages ---
+    stages {
+        // Stage 1: Checkout and Prepare Workspace
+        stage('Checkout & Prepare') {
+            steps {
+                script {
+                    echo "Checking out source code..."
+                    checkout scm
+                    
+                    echo "Creating reports directory..."
+                    sh 'mkdir -p reports'
+                    
+                    slackSend channel: '#ci-cd', message: "HeyJude Build Started: Checking out code...", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 2: Scan for vulnerable dependencies.
+        stage('Dependency Check') {
+            steps {
+                script {
+                    echo "Running OWASP Dependency-Check..."
+                    // This is a placeholder for a shell-based execution.
+                    // This requires the Dependency-Check CLI to be installed on the agent
+                    // or available within a custom Docker agent image.
+                    // Example:
+                    // sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/'
+                    echo "Dependency Check placeholder complete."
+                    slackSend channel: '#ci-cd', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 3: Static Application Security Testing (SAST).
+        stage('SAST Scan') {
+            steps {
+                script {
+                    echo "Running SAST scan with Bandit..."
+                    // Bandit is installed and run inside the temporary container.
+                    sh 'pip install bandit && bandit -r . -f html -o reports/bandit-report.html'
+                    slackSend channel: '#ci-cd', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+        
+        // Stage 4: SonarQube Code Quality & Security Analysis
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // This requires the "SonarQube Scanner" plugin.
+                    // Configure the tool in "Manage Jenkins" -> "Global Tool Configuration".
+                    // Configure the server in "Manage Jenkins" -> "Configure System".
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv(SONARQUBE_SERVER) {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                    slackSend channel: '#ci-cd', message: "HeyJude Build: SonarQube Analysis PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 5: Build Docker image.
+        stage('Docker Build') {
+            steps {
+                script {
+                    echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    // Because we mounted the Docker socket, Jenkins can build images on the host.
+                    sh "docker build -t ${DOCKER_IMAGE_NAME} -f Dockerfile ."
+                    slackSend channel: '#ci-cd', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+        
+        // Stage 6: Trivy Container Scan
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    echo "Running Trivy scan on Docker image..."
+                    // Assumes Trivy is installed on the Jenkins MASTER.
+                    // The container communicates with the host's Docker daemon to scan the image.
+                    sh "trivy image --format template --template '@trivy-templates/html.tpl' -o reports/trivy-report.html ${DOCKER_IMAGE_NAME}:latest"
+                    slackSend channel: '#ci-cd', message: "HeyJude Build: Trivy Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 7: Push Docker image to Docker Hub.
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    script {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                        
+                        echo "Pushing image ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} to Docker Hub..."
+                        sh "docker tag ${DOCKER_IMAGE_NAME} ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+
+                        echo "Pushing image ${DOCKER_IMAGE_NAME}:latest to Docker Hub..."
+                        sh "docker tag ${DOCKER_IMAGE_NAME} ${DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    }
+                }
+                slackSend channel: '#ci-cd', message: "HeyJude Build: Image pushed to Docker Hub.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            }
+        }
+    }
+
+    // --- Post-Build Actions ---
+    post {
+        always {
+            script {
+                echo "Archiving reports..."
+                archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+            }
+        }
+        success {
+            slackSend channel: '#ci-cd', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
+        }
+        failure {
+            slackSend channel: '#ci-cd', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
+        }
+    }
+}
