@@ -134,7 +134,6 @@ frontend-service/
 
 #### Part3: Jenkins CI Implementation
 
-# Jenkins CI/CD Process Overview
 
 This document provides a brief summary of the custom Jenkins agent and the pipeline (`Jenkinsfile`) used for the HeyJude project.
 
