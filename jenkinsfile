@@ -138,7 +138,7 @@ pipeline {
             }
         }
         success {
-            slackSend channel: '#ci-cd', color: 'good', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            slackSend channel: '#ci-cd', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
         }
         failure {
             slackSend channel: '#ci-cd', color: 'good', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
