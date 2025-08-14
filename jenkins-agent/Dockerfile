@@ -38,6 +38,8 @@ RUN curl -sSLo /tmp/dependency-check.zip "https://github.com/jeremylong/Dependen
     unzip /tmp/dependency-check.zip -d /opt && \
     rm /tmp/dependency-check.zip
 
-# --- Final Permissions ---
+# --- Final Permissions & Environment ---
+# Set the home directory for the jenkins user.
+ENV HOME=/home/jenkins
 # Switch back to the 'jenkins' user.
 USER jenkins
