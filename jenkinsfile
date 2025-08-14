@@ -15,7 +15,7 @@ pipeline {
         DOCKERHUB_USERNAME = 'your-dockerhub-username'
         DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
-        SLACK_CREDENTIALS_ID = 'slack-webhook-credentials'
+        SLACK_CREDENTIALS_ID = 'slack-bot-notification'
         // Credentials for SonarQube, configured in Jenkins
         SONARQUBE_CREDENTIALS_ID = 'sonarqube-credentials'
         // Name of the SonarQube server configuration in Jenkins
