@@ -34,7 +34,7 @@ pipeline {
                     echo "Creating reports directory..."
                     sh 'mkdir -p reports'
                     
-                    slackSend channel: '#ci-cd', message: "HeyJude Build Started: Checking out code...", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build Started: Checking out code...", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -50,7 +50,7 @@ pipeline {
                     // Example:
                     // sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/'
                     echo "Dependency Check placeholder complete."
-                    slackSend channel: '#ci-cd', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -62,7 +62,7 @@ pipeline {
                     echo "Running SAST scan with Bandit..."
                     // Bandit is installed and run inside the temporary container.
                     sh 'pip install bandit && bandit -r . -f html -o reports/bandit-report.html'
-                    slackSend channel: '#ci-cd', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -78,7 +78,7 @@ pipeline {
                     withSonarQubeEnv(SONARQUBE_SERVER) {
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
-                    slackSend channel: '#ci-cd', message: "HeyJude Build: SonarQube Analysis PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SonarQube Analysis PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -90,7 +90,7 @@ pipeline {
                     echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
                     // Because we mounted the Docker socket, Jenkins can build images on the host.
                     sh "docker build -t ${DOCKER_IMAGE_NAME} -f Dockerfile ."
-                    slackSend channel: '#ci-cd', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -103,7 +103,7 @@ pipeline {
                     // Assumes Trivy is installed on the Jenkins MASTER.
                     // The container communicates with the host's Docker daemon to scan the image.
                     sh "trivy image --format template --template '@trivy-templates/html.tpl' -o reports/trivy-report.html ${DOCKER_IMAGE_NAME}:latest"
-                    slackSend channel: '#ci-cd', message: "HeyJude Build: Trivy Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -124,7 +124,7 @@ pipeline {
                         sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                     }
                 }
-                slackSend channel: '#ci-cd', message: "HeyJude Build: Image pushed to Docker Hub.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Image pushed to Docker Hub.", tokenCredentialId: SLACK_CREDENTIALS_ID
             }
         }
     }
@@ -138,10 +138,10 @@ pipeline {
             }
         }
         success {
-            slackSend channel: '#ci-cd', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            slackSend channel: '#ci-cd', color: 'good', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
         }
         failure {
-            slackSend channel: '#ci-cd', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            slackSend channel: '#ci-cd', color: 'good', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
         }
     }
 }
