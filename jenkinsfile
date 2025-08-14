@@ -5,8 +5,9 @@ pipeline {
     // It will pull the specified image and use it as the execution environment.
     agent {
         docker {
-            image 'python:3.10-slim' // Use a base Python image for our build tools
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount the Docker socket
+            // Make sure this matches the name and tag you pushed to Docker Hub
+            image 'vijaiv/heyjude-jenkins-agent:1.1' 
+            args '-v /var/run/docker.sock:/var/run/docker.sock' 
         }
     }
 
