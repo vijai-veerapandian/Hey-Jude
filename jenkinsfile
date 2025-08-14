@@ -12,14 +12,14 @@ pipeline {
 
     // Environment variables used throughout the pipeline.
     environment {
-        DOCKERHUB_USERNAME = 'your-dockerhub-username'
-        DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend"
+        DOCKERHUB_USERNAME = 'vijaiv'
+        DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend:1.1"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
         SLACK_CREDENTIALS_ID = 'slack-bot-notification'
         // Credentials for SonarQube, configured in Jenkins
-        SONARQUBE_CREDENTIALS_ID = 'sonarqube-credentials'
+        SONARQUBE_CREDENTIALS_ID = 'sonarqube-auth-token'
         // Name of the SonarQube server configuration in Jenkins
-        SONARQUBE_SERVER = 'SonarQubeServer'
+        SONARQUBE_SERVER = 'sonarqube-server'
     }
 
     // --- Pipeline Stages ---
