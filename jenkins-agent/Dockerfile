@@ -1,5 +1,5 @@
 # Start from an official Jenkins agent image to ensure compatibility.
-FROM jenkins/agent:latest-jdk11
+FROM jenkins/agent:latest-jdk17
 
 # Switch to the root user to install software.
 USER root
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
 
 # --- Install Python & Bandit (SAST) ---
 RUN apt-get install -y python3 python3-pip && \
-    pip3 install bandit
+    pip3 install bandit --break-system-packages
 
 # --- Install Trivy (Container Scanner) ---
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
