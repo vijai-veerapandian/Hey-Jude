@@ -67,7 +67,7 @@ pipeline {
                 script {
                     def scannerHome = tool 'SonarQubeScanner'
                     withSonarQubeEnv(SONARQUBE_SERVER) {
-                        sh "sonar-scanner"
+                        sh "sonar-scanner -X"
                     }
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SonarQube Analysis PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
