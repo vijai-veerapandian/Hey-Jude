@@ -72,7 +72,6 @@ pipeline {
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SonarQube Analysis PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
-        }
             post {
                 success {
                     script {
@@ -88,7 +87,7 @@ pipeline {
                     }
                 }
             }
-
+        }
         // Stage 5: Build Docker image.
         stage('Docker Build') {
             steps {
