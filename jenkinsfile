@@ -55,7 +55,7 @@ pipeline {
                 script {
                     echo "Running SAST scan with Bandit..."
                     // Bandit is installed and run inside the temporary container.
-                    sh 'pip install bandit && bandit -r . -f html -o reports/bandit-report.html'
+                    sh 'bandit -r . -f html -o reports/bandit-report.html'
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
