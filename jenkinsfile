@@ -44,7 +44,7 @@ pipeline {
                 script {
                     echo "Running OWASP Dependency-Check..."
                     // Execute the Dependency-Check CLI installed in our custom agent.
-                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/'
+                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --noupdate'
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }

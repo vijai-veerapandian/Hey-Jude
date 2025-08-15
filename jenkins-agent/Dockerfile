@@ -37,6 +37,7 @@ ENV DEPENDENCY_CHECK_VERSION=8.4.0
 RUN curl -sSLo /tmp/dependency-check.zip "https://github.com/jeremylong/DependencyCheck/releases/download/v${DEPENDENCY_CHECK_VERSION}/dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip" && \
     unzip /tmp/dependency-check.zip -d /opt && \
     rm /tmp/dependency-check.zip
+    /opt/dependency-check/bin/dependency-check.sh --updateonly
 
 # --- Final Permissions & Environment ---
 # Set the home directory for the jenkins user.
