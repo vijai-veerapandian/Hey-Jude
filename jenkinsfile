@@ -1,8 +1,6 @@
 // HeyJude CI/CD Pipeline with Docker Agent
 pipeline {
     // --- Agent Configuration ---
-    // This tells Jenkins to run the pipeline inside a Docker container.
-    // It will pull the specified image and use it as the execution environment.
     agent {
         docker {
             // Make sure this matches the name and tag you pushed to Docker Hub
@@ -45,11 +43,6 @@ pipeline {
             steps {
                 script {
                     echo "Running OWASP Dependency-Check..."
-                    // This is a placeholder for a shell-based execution.
-                    // This requires the Dependency-Check CLI to be installed on the agent
-                    // or available within a custom Docker agent image.
-                    // Example:
-                    // sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/'
                     echo "Dependency Check placeholder complete."
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
@@ -72,9 +65,6 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // This requires the "SonarQube Scanner" plugin.
-                    // Configure the tool in "Manage Jenkins" -> "Global Tool Configuration".
-                    // Configure the server in "Manage Jenkins" -> "Configure System".
                     def scannerHome = tool 'SonarQubeScanner'
                     withSonarQubeEnv(SONARQUBE_SERVER) {
                         sh "${scannerHome}/bin/sonar-scanner"
@@ -83,13 +73,27 @@ pipeline {
                 }
             }
         }
+            post {
+                success {
+                    script {
+                        // This step pauses the pipeline until SonarQube sends a status back.
+                        // The 'timeout' prevents the build from waiting forever.
+                        timeout(time: 1, unit: 'HOURS') {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
+                            }
+                        }
+                        slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SonarQube Quality Gate PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    }
+                }
+            }
 
         // Stage 5: Build Docker image.
         stage('Docker Build') {
             steps {
                 script {
                     echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    // Because we mounted the Docker socket, Jenkins can build images on the host.
                     sh "docker build -t ${DOCKER_IMAGE_NAME} -f Dockerfile ."
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
@@ -101,8 +105,6 @@ pipeline {
             steps {
                 script {
                     echo "Running Trivy scan on Docker image..."
-                    // Assumes Trivy is installed on the Jenkins MASTER.
-                    // The container communicates with the host's Docker daemon to scan the image.
                     sh "trivy image --format template --template '@trivy-templates/html.tpl' -o reports/trivy-report.html ${DOCKER_IMAGE_NAME}:latest"
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
