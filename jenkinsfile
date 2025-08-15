@@ -43,7 +43,7 @@ pipeline {
                 script {
                     echo "Running OWASP Dependency-Check..."
                     // Use --noupdate because the database is pre-populated in the agent image.
-                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --noupdate'
+                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/'
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
