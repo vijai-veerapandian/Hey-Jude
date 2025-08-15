@@ -3,8 +3,7 @@ pipeline {
     // --- Agent Configuration ---
     agent {
         docker {
-            // Make sure this matches the name and tag you pushed to Docker Hub
-            image 'vijaiv/hey-jude-jenkins-agent:1.2' 
+            image 'vijaiv/hey-jude-jenkins-agent:1.3' 
             args '-v /var/run/docker.sock:/var/run/docker.sock' 
         }
     }
@@ -43,7 +42,7 @@ pipeline {
             steps {
                 script {
                     echo "Running OWASP Dependency-Check..."
-                    // Execute the Dependency-Check CLI installed in our custom agent.
+                    // Use --noupdate because the database is pre-populated in the agent image.
                     sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --noupdate'
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }

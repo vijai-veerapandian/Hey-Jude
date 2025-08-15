@@ -1,4 +1,4 @@
-# Start from an official Jenkins agent image to ensure compatibility.
+# Start from an official Jenkins agent image that includes JDK 17.
 FROM jenkins/agent:latest-jdk17
 
 # Switch to the root user to install software.
@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     apt-get update && apt-get install -y docker-ce-cli
 
 # --- Install Python & Bandit (SAST) ---
+# Use --break-system-packages to override the externally-managed-environment protection.
 RUN apt-get install -y python3 python3-pip && \
     pip3 install bandit --break-system-packages
 
@@ -33,11 +34,11 @@ RUN curl -sSLo /tmp/sonar-scanner.zip "https://binaries.sonarsource.com/Distribu
     ln -s /opt/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner
 
 # --- Install OWASP Dependency-Check ---
-ENV DEPENDENCY_CHECK_VERSION=8.4.0
+# This version only installs the tool without pre-populating the database.
+ENV DEPENDENCY_CHECK_VERSION=9.2.0
 RUN curl -sSLo /tmp/dependency-check.zip "https://github.com/jeremylong/DependencyCheck/releases/download/v${DEPENDENCY_CHECK_VERSION}/dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip" && \
     unzip /tmp/dependency-check.zip -d /opt && \
     rm /tmp/dependency-check.zip
-    /opt/dependency-check/bin/dependency-check.sh --updateonly
 
 # --- Final Permissions & Environment ---
 # Set the home directory for the jenkins user.
