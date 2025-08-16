@@ -48,7 +48,7 @@ pipeline {
                         echo "Warning: Database update failed, proceeding with existing database..."
                     }
                     echo "Running OWASP Dependency-Check scan..."                        
-                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 3000'
+                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --noupdate'
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                     }
                 }
