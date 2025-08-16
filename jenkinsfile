@@ -42,7 +42,7 @@ pipeline {
                 script {
                     echo "Running Trivy filesystem scan for dependencies..."
                     // Clone the official Trivy templates for HTML reporting
-                    sh "git clone https://github.com/aquasecurity/trivy-templates.git"
+                    sh "git clone https://github.com/aquasecurity/trivy.git"
                     // Scans the local filesystem, using the downloaded template
                     sh "trivy fs --format template --template '@/trivy-templates/html.tpl' -o reports/trivy-fs-report.html ."
                     slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Filesystem Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
