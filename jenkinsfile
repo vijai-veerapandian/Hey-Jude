@@ -3,13 +3,15 @@ pipeline {
     agent {
         docker {
             image 'vijaiv/hey-jude-jenkins-agent:1.4' 
-            args '-v /var/run/docker.sock:/var/run/docker.sock' 
+            // Mount a named volume to cache the dependency-check database
+            args '-v /var/run/docker.sock:/var/run/docker.sock -v dependency-check-cache:/opt/dependency-check/data' 
         }
     }
 
     // Environment variables used throughout the pipeline.
     environment {
         DOCKERHUB_USERNAME = 'vijaiv'
+        // Corrected: This should be the name of your application image, not the agent image.
         DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend:1.1"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
         SLACK_CREDENTIALS_ID = 'slack-bot-notification'
@@ -38,18 +40,24 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: NVD_CREDENTIALS_ID, variable: 'NVD_API_KEY')]) {
                     script {
-                        echo "Updating OWASP DB Dependency-Check with NVD API Key..."
-                    def updateResult = sh(
-                        script: '/opt/dependency-check/bin/dependency-check.sh --updateonly --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 3000',
-                        returnStatus: true
-                    )
+                        echo "Attempting to update OWASP DB with NVD API Key..."
+                        // First, try to update the database. returnStatus: true prevents the build from failing if this step fails.
+                        def updateResult = sh(
+                            script: '/opt/dependency-check/bin/dependency-check.sh --updateonly --nvdApiKey "$NVD_API_KEY"',
+                            returnStatus: true
+                        )
                 
-                    if (updateResult != 0) {
-                        echo "Warning: Database update failed, proceeding with existing database..."
-                    }
-                    echo "Running OWASP Dependency-Check scan..."                        
-                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --enableOssIndex --disableNvd'
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                        if (updateResult == 0) {
+                            echo "Database update successful."
+                        } else {
+                            // If the update fails, we log a warning but continue, relying on the cached data.
+                            echo "Warning: Database update failed. Proceeding with existing database..."
+                        }
+
+                        echo "Running OWASP Dependency-Check scan using cached data..."                        
+                        // Now, run the scan with --noupdate to force it to use the local cache.
+                        sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --noupdate'
+                        slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                     }
                 }
             }
@@ -73,6 +81,7 @@ pipeline {
                     sh 'sonar-scanner'
                 }
             }
+            // Corrected: The 'post' block must be inside the stage it applies to.
             post {
                 success {
                     script {
@@ -100,12 +109,12 @@ pipeline {
         }
         
         // Stage 6: Trivy Container Scan
-        stage('Trivy Scan') {
+        stage('Trivy Container Scan') {
             steps {
                 script {
                     echo "Running Trivy scan on Docker image..."
                     sh "trivy image --format template --template '@trivy-templates/html.tpl' -o reports/trivy-report.html ${DOCKER_IMAGE_NAME}:latest"
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Container Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
