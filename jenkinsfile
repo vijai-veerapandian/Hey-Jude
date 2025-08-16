@@ -2,7 +2,7 @@
 pipeline {
     agent {
         docker {
-            image 'vijaiv/hey-jude-jenkins-agent:1.3' 
+            image 'vijaiv/hey-jude-jenkins-agent:1.4' 
             args '-v /var/run/docker.sock:/var/run/docker.sock' 
         }
     }
@@ -38,10 +38,18 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: NVD_CREDENTIALS_ID, variable: 'NVD_API_KEY')]) {
                     script {
-                        echo "Running OWASP Dependency-Check with NVD API Key..."
-                        // This command now securely uses the API key from Jenkins credentials.
-                        sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY"'
-                        slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                        echo "Updating OWASP DB Dependency-Check with NVD API Key..."
+                    def updateResult = sh(
+                        script: '/opt/dependency-check/bin/dependency-check.sh --updateonly --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 3000',
+                        returnStatus: true
+                    )
+                
+                    if (updateResult != 0) {
+                        echo "Warning: Database update failed, proceeding with existing database..."
+                    }
+                    echo "Running OWASP Dependency-Check scan..."                        
+                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 3000'
+                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                     }
                 }
             }
