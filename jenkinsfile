@@ -40,7 +40,7 @@ pipeline {
                     script {
                         echo "Running OWASP Dependency-Check with NVD API Key..."
                         // This command now securely uses the API key from Jenkins credentials.
-                        sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --nvdApiKey $NVD_API_KEY"'
+                        sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY"'
                         slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                     }
                 }
