@@ -1,6 +1,7 @@
 # Start from an official Jenkins agent image that includes JDK 17.
 FROM jenkins/agent:latest-jdk17
 
+ARG NVD_API_KEY
 # Switch to the root user to install software.
 USER root
 
@@ -38,7 +39,8 @@ RUN curl -sSLo /tmp/sonar-scanner.zip "https://binaries.sonarsource.com/Distribu
 ENV DEPENDENCY_CHECK_VERSION=9.2.0
 RUN curl -sSLo /tmp/dependency-check.zip "https://github.com/jeremylong/DependencyCheck/releases/download/v${DEPENDENCY_CHECK_VERSION}/dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip" && \
     unzip /tmp/dependency-check.zip -d /opt && \
-    rm /tmp/dependency-check.zip
+    rm /tmp/dependency-check.zip && \
+    /opt/dependency-check/bin/dependency-check.sh --updateonly --nvdApiKey ${NVD_API_KEY} --nvdApiDelay 3000
 
 # --- Final Permissions & Environment ---
 # Set the home directory for the jenkins user.
