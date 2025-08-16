@@ -15,6 +15,7 @@ pipeline {
         SLACK_CREDENTIALS_ID = 'slack-bot-notification'
         SONARQUBE_CREDENTIALS_ID = 'sonarqube-auth-token'
         SONARQUBE_SERVER = 'sonarqube-server'
+        NVD_CREDENTIALS_ID = 'nvd-api-key'
     }
 
     // --- Pipeline Stages ---
@@ -35,10 +36,13 @@ pipeline {
         // Stage 2: Scan for vulnerable dependencies.
         stage('Dependency Check') {
             steps {
-                script {
-                    echo "Running OWASP Dependency-Check..."
-                    sh '/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/'
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                withCredentials([string(credentialsId: NVD_CREDENTIALS_ID, variable: 'NVD_API_KEY')]) {
+                    script {
+                        echo "Running OWASP Dependency-Check with NVD API Key..."
+                        // This command now securely uses the API key from Jenkins credentials.
+                        sh "/opt/dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports/ --nvdApiKey \"${NVD_API_KEY}\""
+                        slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Dependency Check PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    }
                 }
             }
         }
