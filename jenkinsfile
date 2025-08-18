@@ -25,7 +25,7 @@ pipeline {
                     checkout scm                   
                     echo "Creating reports directory..."
                     sh 'mkdir -p reports'
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build Started: Checking out code...", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build Started: Checking out code...", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -40,7 +40,7 @@ pipeline {
                         sh "git clone --depth 1 https://github.com/aquasecurity/trivy.git"
                         sh "trivy fs --format template --template '@/trivy/contrib/html.tpl' -o reports/trivy-fs-report.html ."
                     }
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Filesystem Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Trivy Filesystem Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -54,7 +54,7 @@ pipeline {
                     docker.image('python:3.10-slim').inside {
                         sh 'pip install bandit && bandit -r . -f html -o reports/bandit-report.html'
                     }
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -80,7 +80,7 @@ pipeline {
                                 error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
                             }
                         }
-                        slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: SonarQube Quality Gate PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                        slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: SonarQube Quality Gate PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                     }
                 }
             }
@@ -92,7 +92,7 @@ pipeline {
                 script {
                     echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker build -t ${DOCKER_IMAGE_NAME} -f Dockerfile ."
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -107,7 +107,7 @@ pipeline {
                         sh "git clone --depth 1 https://github.com/aquasecurity/trivy.git"
                         sh "trivy image --format template --template '@/trivy/contrib/html.tpl' -o reports/trivy-report.html ${DOCKER_IMAGE_NAME}:latest"
                     }
-                    slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Trivy Container Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Trivy Container Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
         }
@@ -128,7 +128,7 @@ pipeline {
                         sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                     }
                 }
-                slackSend channel: '#ci-cd', color: 'good', message: "HeyJude Build: Image pushed to Docker Hub.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Image pushed to Docker Hub.", tokenCredentialId: SLACK_CREDENTIALS_ID
             }
         }
     }
@@ -142,10 +142,10 @@ pipeline {
             }
         }
         success {
-            slackSend channel: '#ci-cd', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            slackSend channel: '#cicd', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
         }
         failure {
-            slackSend channel: '#ci-cd', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            slackSend channel: '#cicd', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
         }
     }
 }
