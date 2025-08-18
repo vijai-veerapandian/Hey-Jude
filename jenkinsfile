@@ -15,6 +15,7 @@ pipeline {
         SLACK_CREDENTIALS_ID = 'slack-bot-notification'
         SONARQUBE_CREDENTIALS_ID = 'sonarqube-auth-token'
         SONARQUBE_SERVER = 'sonarqube-server'
+        // NVD_CREDENTIALS_ID is no longer needed.
     }
 
     // --- Pipeline Stages ---
@@ -55,8 +56,8 @@ pipeline {
             steps {
                 script {
                     echo "Running SAST scan with Bandit..."
-                    // The python image doesn't need an entrypoint override.
-                    docker.image('python:3.10-slim').inside {
+                    // Add '-e HOME=/tmp' to provide a writable home directory for the pip install command.
+                    docker.image('python:3.10-slim').inside('-e HOME=/tmp') {
                         sh 'pip install bandit && bandit -r . -f html -o reports/bandit-report.html'
                     }
                     slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
