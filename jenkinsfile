@@ -1,5 +1,8 @@
 // HeyJude CI/CD Pipeline with a Dedicated VM Agent
 pipeline {
+    // --- Agent Configuration ---
+    // This tells Jenkins to run the entire pipeline on any available agent
+    // that has the label 'docker-agent'.
     agent {
         label 'docker-agent'
     }
@@ -12,6 +15,7 @@ pipeline {
         SLACK_CREDENTIALS_ID = 'slack-bot-notification'
         SONARQUBE_CREDENTIALS_ID = 'sonarqube-auth-token'
         SONARQUBE_SERVER = 'sonarqube-server'
+        // NVD_CREDENTIALS_ID is no longer needed.
     }
 
     // --- Pipeline Stages ---
@@ -34,6 +38,7 @@ pipeline {
             steps {
                 script {
                     echo "Running Trivy filesystem scan for dependencies..."
+                    // Run Trivy inside a temporary Docker container on the agent VM.
                     docker.image('aquasec/trivy:latest').inside {
                         sh "git clone --depth 1 https://github.com/aquasecurity/trivy.git"
                         sh "trivy fs --format template --template '@/trivy/contrib/html.tpl' -o reports/trivy-fs-report.html ."
@@ -48,6 +53,7 @@ pipeline {
             steps {
                 script {
                     echo "Running SAST scan with Bandit..."
+                    // Run Bandit inside a temporary Docker container on the agent VM.
                     docker.image('python:3.10-slim').inside {
                         sh 'pip install bandit && bandit -r . -f html -o reports/bandit-report.html'
                     }
@@ -59,10 +65,12 @@ pipeline {
         // Stage 4: SonarQube Code Quality & Security Analysis
         stage('SonarQube Analysis') {
             steps {
-                // Run the SonarQube scanner inside its official Docker container with a specific version.
-                docker.image('sonarsource/sonar-scanner-cli:5.0').inside {
-                    withSonarQubeEnv(SONARQUBE_SERVER) {
-                        sh 'sonar-scanner'
+                script {
+                    // Run the SonarQube scanner inside its official Docker container with a specific version.
+                    docker.image('sonarsource/sonar-scanner-cli:5.0').inside {
+                        withSonarQubeEnv(SONARQUBE_SERVER) {
+                            sh 'sonar-scanner'
+                        }
                     }
                 }
             }
