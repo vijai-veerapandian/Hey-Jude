@@ -1,8 +1,5 @@
 // HeyJude CI/CD Pipeline with a Dedicated VM Agent
 pipeline {
-    // --- Agent Configuration ---
-    // This tells Jenkins to run the entire pipeline on any available agent
-    // that has the label 'docker-agent'.
     agent {
         label 'docker-agent'
     }
