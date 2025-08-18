@@ -1,0 +1,161 @@
+// HeyJude CI/CD Pipeline with a Dedicated VM Agent
+pipeline {
+    // --- Agent Configuration ---
+    // This tells Jenkins to run the entire pipeline on any available agent
+    // that has the label 'docker-agent'.
+    agent {
+        label 'docker-agent'
+    }
+
+    // Environment variables used throughout the pipeline.
+    environment {
+        DOCKERHUB_USERNAME = 'vijaiv'
+        DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend:1.1"
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
+        SLACK_CREDENTIALS_ID = 'slack-bot-notification'
+        SONARQUBE_CREDENTIALS_ID = 'sonarqube-auth-token'
+        SONARQUBE_SERVER = 'sonarqube-server'
+        // NVD_CREDENTIALS_ID is no longer needed.
+    }
+
+    // --- Pipeline Stages ---
+    stages {
+        // Stage 1: Checkout and Prepare Workspace
+        stage('Checkout & Prepare') {
+            steps {
+                script {
+                    echo "Checking out source code..."
+                    checkout scm                   
+                    echo "Creating reports directory..."
+                    sh 'mkdir -p reports'
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build Started: Checking out code...", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 2: Trivy Filesystem Scan (SCA)
+        stage('Trivy Filesystem Scan') {
+            steps {
+                script {
+                    echo "Running Trivy filesystem scan for dependencies..."
+                    // Using a specific version of Trivy for consistency.
+                    docker.image('aquasec/trivy:0.50.1').inside('--entrypoint=""') {
+                        // Clean up previous clone before starting a new one
+                        sh 'rm -rf trivy'
+                        sh "git clone --depth 1 https://github.com/aquasecurity/trivy.git"
+                        // Set a writable cache directory to avoid permission errors.
+                        sh "XDG_CACHE_HOME=/tmp trivy fs --format template --template 'trivy/contrib/html.tpl' -o reports/trivy-fs-report.html ."
+                    }
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Trivy Filesystem Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 3: Static Application Security Testing (SAST).
+        stage('SAST Scan') {
+            steps {
+                script {
+                    echo "Running SAST scan with Bandit..."
+                    // Add '-e HOME=/tmp' to provide a writable home directory for the pip install command.
+                    docker.image('python:3.10-slim').inside('-e HOME=/tmp') {
+                        // Add the local bin directory to the PATH before running the bandit command.
+                        sh 'pip install bandit && export PATH=$PATH:/tmp/.local/bin && bandit -r . -f html -o reports/bandit-report.html'
+                    }
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: SAST Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+        
+        // Stage 4: SonarQube Code Quality & Security Analysis
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // Add --entrypoint='' to override the image's default entrypoint.
+                    docker.image('sonarsource/sonar-scanner-cli:5.0').inside('--entrypoint=""') {
+                        withSonarQubeEnv(SONARQUBE_SERVER) {
+                            sh 'sonar-scanner'
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    script {
+                        timeout(time: 1, unit: 'HOURS') {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
+                            }
+                        }
+                        slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: SonarQube Quality Gate PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                    }
+                }
+            }
+        }
+
+        // Stage 5: Build Docker image.
+        stage('Docker Build') {
+            steps {
+                script {
+                    echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker build -t ${DOCKER_IMAGE_NAME} -f Dockerfile ."
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+        
+        // Stage 6: Trivy Container Scan
+        stage('Trivy Container Scan') {
+            steps {
+                script {
+                    echo "Running Trivy scan on Docker image..."
+                    // Using a specific version of Trivy for consistency.
+                    docker.image('aquasec/trivy:0.50.1').inside('--entrypoint=""') {
+                        // Clean up previous clone before starting a new one
+                        sh 'rm -rf trivy'
+                        sh "git clone --depth 1 https://github.com/aquasecurity/trivy.git"
+                        // Set a writable cache directory to avoid permission errors.
+                        sh "XDG_CACHE_HOME=/tmp trivy image --format template --template 'trivy/contrib/html.tpl' -o reports/trivy-report.html ${DOCKER_IMAGE_NAME}:latest"
+                    }
+                    slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Trivy Container Scan PASSED.", tokenCredentialId: SLACK_CREDENTIALS_ID
+                }
+            }
+        }
+
+        // Stage 7: Push Docker image to Docker Hub.
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    script {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                        
+                        echo "Pushing image ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} to Docker Hub..."
+                        sh "docker tag ${DOCKER_IMAGE_NAME} ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+
+                        echo "Pushing image ${DOCKER_IMAGE_NAME}:latest to Docker Hub..."
+                        sh "docker tag ${DOCKER_IMAGE_NAME} ${DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    }
+                }
+                slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Image pushed to Docker Hub.", tokenCredentialId: SLACK_CREDENTIALS_ID
+            }
+        }
+    }
+
+    // --- Post-Build Actions ---
+    post {
+        always {
+            script {
+                echo "Archiving reports..."
+                archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+            }
+        }
+        success {
+            slackSend channel: '#cicd', color: 'good', message: "SUCCESS: HeyJude pipeline finished successfully. Build #${env.BUILD_NUMBER}. Reports are available.", tokenCredentialId: SLACK_CREDENTIALS_ID
+        }
+        failure {
+            slackSend channel: '#cicd', color: 'danger', message: "FAILURE: HeyJude pipeline failed at build #${env.BUILD_NUMBER}. Check logs and reports.", tokenCredentialId: SLACK_CREDENTIALS_ID
+        }
+    }
+}
