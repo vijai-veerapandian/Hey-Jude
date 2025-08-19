@@ -35,7 +35,7 @@ pipeline {
             steps {
                 script {
                     echo "Running Trivy filesystem scan for dependencies..."
-                    docker.image('aquasec/trivy:0.50.1').inside('--entrypoint=""') {
+                    docker.image('aquasec/trivy:0.50.1').inside('--entrypoint="" -v /var/run/docker.sock:/var/run/docker.sock -u root') {
                         sh 'rm -rf trivy'
                         sh "git clone --depth 1 https://github.com/aquasecurity/trivy.git"
                         sh "XDG_CACHE_HOME=/tmp trivy fs --format template --template 'trivy/contrib/html.tpl' -o reports/trivy-fs-report.html ."
