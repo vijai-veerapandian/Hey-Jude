@@ -8,7 +8,7 @@ pipeline {
     // Environment variables used throughout the pipeline.
     environment {
         DOCKERHUB_USERNAME = 'vijaiv'
-        DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend:1.1"
+        DOCKER_IMAGE_NAME = "${DOCKERHUB_USERNAME}/heyjude-frontend"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
         SLACK_CREDENTIALS_ID = 'slack-bot-notification'
         SONARQUBE_CREDENTIALS_ID = 'sonarqube-auth-token'
