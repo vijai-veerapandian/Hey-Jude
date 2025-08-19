@@ -35,7 +35,7 @@ pipeline {
 
         // Stage 2: Trivy Filesystem Scan (SCA)
         stage('Trivy Filesystem Scan') {
-            steps {
+            steps { 
                 script {
                     echo "Running Trivy filesystem scan for dependencies..."
                     // Using a specific version of Trivy for consistency.
@@ -81,7 +81,7 @@ pipeline {
             post {
                 success {
                     script {
-                        timeout(time: 1, unit: 'HOURS') {
+                        timeout(time: 3, unit: 'MINUTES') {
                             def qg = waitForQualityGate()
                             if (qg.status != 'OK') {
                                 error "Pipeline aborted due to SonarQube Quality Gate failure: ${qg.status}"
