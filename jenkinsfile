@@ -81,7 +81,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    sh "docker build -t ${DOCKER_IMAGE_NAME} -f frontend-service/Dockerfile frontend-service/"
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} -f frontend-service/Dockerfile frontend-service/"
                     slackSend channel: '#cicd', color: 'good', message: "HeyJude Build: Docker Image built successfully.", tokenCredentialId: SLACK_CREDENTIALS_ID
                 }
             }
